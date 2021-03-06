@@ -1,0 +1,892 @@
+var blocksize = Integer(math.min(canvas.height()/22,canvas.width()/12));
+var field = [];
+var objects = [];
+var speed = 1; #synonym to level
+var theTime = 0;
+var points = 0;
+var highscore = 1000;
+var end = false;
+var firsttime = true;
+
+
+class block
+{
+	public:
+		var color;
+		var x;
+		var y;
+		var active;
+		
+		constructor(p_x, p_y, p_color, p_active = false)
+		{
+			color = p_color;
+			x = p_x;
+			y = p_y;
+			active = p_active;
+		}
+	function setActive(p)
+	{
+		if p then
+		{
+			active = true;
+		}
+		else
+		{
+			active = false;
+			color = [0.9,0.9,0.9];
+		}
+	}
+}
+#every object contains 4 blocks
+class object
+{
+	public:
+		var b1;
+		var b2;
+		var b3;
+		var b4;
+		var color;
+		var arrived = false;
+		var type = 0;
+		
+		constructor(p = 0)
+		{
+			if p == 0 then
+			{
+				this.newObject(Integer(math.ceil(math.random()*7)));
+			}
+			else
+			{
+				assert(p>0 and p<8, message= "integer between 1 and 7 expected");
+				this.newObject(p);
+			}
+		}
+	function initialise()
+	{
+		if b1.active == false and b2.active == false and b3.active == false and b4.active == false then
+			{
+				b1.active = true;
+				b1.color = this.color;
+
+				b2.active = true;
+				b2.color = this.color;
+
+				b3.active = true;
+				b3.color = this.color;
+
+				b4.active = true;
+				b4.color = this.color;
+			}
+			else
+			{
+				end = true;
+			}
+	}	
+	#seven different objects	
+	function newObject(p)
+	{
+		if p == 1 then
+		{
+			type = 1;
+			color = [0,0.7,0.8];
+			b1 = field[5+10*0];
+			b2 = field[5+10*1];
+			b3 = field[5+10*2];
+			b4 = field[5+10*3];
+
+			this.initialise();
+		}
+		else if p == 2 then
+		{
+			type = 2;
+			color = [0.9,0.9,0];
+			b1 = field[4+10*1];
+			b2 = field[4+10*0];
+			b3 = field[5+10*1];
+			b4 = field[5+10*0];
+
+			this.initialise();
+		}
+		else if p == 3 then
+		{
+			type = 3;
+			color = [0,0.9,0];
+			b1 = field[4+10*1];
+			b2 = field[5+10*1];
+			b3 = field[5+10*0];
+			b4 = field[6+10*0];
+
+			this.initialise();
+		}
+		else if p == 4 then
+		{
+			type = 4;
+			color = [0,0,0.9];
+			b1 = field[6+10*1];
+			b2 = field[5+10*1];
+			b3 = field[4+10*1];
+			b4 = field[4+10*0];
+
+			this.initialise();
+		}
+		else if p == 5 then
+		{
+			type = 5;
+			color = [0.6,0.4,0.4];
+			b1 = field[4+10*1];
+			b2 = field[5+10*1];
+			b3 = field[6+10*1];
+			b4 = field[6+10*0];
+
+			this.initialise();
+		}
+		else if p == 6 then 
+		{
+			type = 6;
+			color = [0.5,0.2,0.9];
+			b1 = field[4+10*1];
+			b2 = field[5+10*1];
+			b3 = field[5+10*0];
+			b4 = field[6+10*1];
+
+			this.initialise();
+		}
+		else if p == 7 then 
+		{
+			type = 7;
+			color = [1,0.1,0.1];
+			b1 = field[6+10*1];
+			b2 = field[5+10*1];
+			b3 = field[5+10*0];
+			b4 = field[4+10*0];
+
+			this.initialise();
+		}
+		else error("integer between 1 and 7 expected");	
+	}
+	#false means not in Object
+	function checkIfInObject(b)
+	{
+		if b == b1 then
+		{
+			return true;
+		}
+		else if b == b2 then
+		{
+			return true;
+		}
+		else if b == b3 then
+		{
+			return true;
+		}
+		else if b == b4 then
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	
+	#true means no collision
+	function checkForCollision(c)
+	{
+		if c == "left" then
+		{
+			#check if left wall is reached
+			if b1.x >= 1 and b2.x >= 1 and b3.x >= 1 and b4.x >= 1then
+			{
+			#check if there is an object on the left (which is not the current object)
+				return (((field[(b1.x-1)+(10*b1.y)].active == false) or (checkIfInObject(field[(b1.x-1)+(10*b1.y)])) == true)
+				    and ((field[(b2.x-1)+(10*b2.y)].active == false) or (checkIfInObject(field[(b2.x-1)+(10*b2.y)])) == true)
+				    and ((field[(b3.x-1)+(10*b3.y)].active == false) or (checkIfInObject(field[(b3.x-1)+(10*b3.y)])) == true)
+				    and ((field[(b4.x-1)+(10*b4.y)].active == false) or (checkIfInObject(field[(b4.x-1)+(10*b4.y)])) == true) );
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else if c == "right" then
+		{
+			#check if right wall is reached
+			if b1.x <= 8 and b2.x <= 8 and b3.x <= 8 and b4.x <= 8 then
+			{
+			#check if there is an object on the right (which is not the current object)
+				return (((field[(b1.x+1)+(10*b1.y)].active == false) or (checkIfInObject(field[(b1.x+1)+(10*b1.y)])) == true)
+				    and ((field[(b2.x+1)+(10*b2.y)].active == false) or (checkIfInObject(field[(b2.x+1)+(10*b2.y)])) == true)
+				    and ((field[(b3.x+1)+(10*b3.y)].active == false) or (checkIfInObject(field[(b3.x+1)+(10*b3.y)])) == true)
+				    and ((field[(b4.x+1)+(10*b4.y)].active == false) or (checkIfInObject(field[(b4.x+1)+(10*b4.y)])) == true) );
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else if c == "down" then
+		{
+			#check if right wall is reached
+			if b1.y <= 18 and b2.y <= 18 and b3.y <= 18 and b4.y <= 18 then
+			{
+			#check if there is an object underneth (which is not the current object)	
+				    if (((field[(b1.x)+(10*(b1.y+1))].active == false) or (checkIfInObject(field[(b1.x)+(10*(b1.y+1))])) == true)
+				    and ((field[(b2.x)+(10*(b2.y+1))].active == false) or (checkIfInObject(field[(b2.x)+(10*(b2.y+1))])) == true)
+				    and ((field[(b3.x)+(10*(b3.y+1))].active == false) or (checkIfInObject(field[(b3.x)+(10*(b3.y+1))])) == true)
+				    and ((field[(b4.x)+(10*(b4.y+1))].active == false) or (checkIfInObject(field[(b4.x)+(10*(b4.y+1))])) == true))then
+				{
+					return true;
+				}
+				else
+				{
+					arrived = true;
+					return false;
+				}
+			}
+			else
+			{
+				arrived = true;
+				return false;
+			}	
+		}
+		else
+		{
+			error("expected: left, right or down");
+		}
+	}	
+	#moves the object down (y+1)
+	function moveDown()
+	{
+		if checkForCollision("down") then
+		{
+			b1.setActive(false);
+			b2.setActive(false);
+			b3.setActive(false);
+			b4.setActive(false);
+
+			b1 = field[b1.x+10*(b1.y+1)];
+			b2 = field[b2.x+10*(b2.y+1)];
+			b3 = field[b3.x+10*(b3.y+1)];
+			b4 = field[b4.x+10*(b4.y+1)];
+
+			b1.active = true;
+			b1.color = this.color;
+
+			b2.active = true;
+			b2.color = this.color;
+
+			b3.active = true;
+			b3.color = this.color;
+
+			b4.active = true;
+			b4.color = this.color;
+		}
+	}
+	#moves the object to the left side (x-1)
+	function moveLeft()
+	{
+		if checkForCollision("left") then
+		{
+			b1.setActive(false);
+			b2.setActive(false);
+			b3.setActive(false);
+			b4.setActive(false);
+
+
+			b1 = field[(b1.x-1)+10*(b1.y+0)];
+			b2 = field[(b2.x-1)+10*(b2.y+0)];
+			b3 = field[(b3.x-1)+10*(b3.y+0)];
+			b4 = field[(b4.x-1)+10*(b4.y+0)];
+
+			b1.active = true;
+			b1.color = this.color;
+
+			b2.active = true;
+			b2.color = this.color;
+
+			b3.active = true;
+			b3.color = this.color;
+
+			b4.active = true;
+			b4.color = this.color;
+		}
+	}
+	#moves the object to the right side (x+1)
+	function moveRight()
+	{
+		if checkForCollision("right") then
+		{
+			b1.setActive(false);
+			b2.setActive(false);
+			b3.setActive(false);
+			b4.setActive(false);
+
+			b1 = field[(b1.x+1)+10*(b1.y+0)];
+			b2 = field[(b2.x+1)+10*(b2.y+0)];
+			b3 = field[(b3.x+1)+10*(b3.y+0)];
+			b4 = field[(b4.x+1)+10*(b4.y+0)];
+
+			b1.active = true;
+			b1.color = this.color;
+
+			b2.active = true;
+			b2.color = this.color;
+
+			b3.active = true;
+			b3.color = this.color;
+
+			b4.active = true;
+			b4.color = this.color;
+		}
+	}
+	#turns the object clockwise
+	function turn()
+	{
+		if type == 1 then
+		{
+			#check for collision 
+			if b2.y < 18 and b2.x < 8 and b2.x > 1 then{ 
+					if (((field[(b2.x)+(10*(b2.y-1))].active == false) or (checkIfInObject(field[(b2.x)+(10*(b2.y-1))])) == true)
+				    and ((field[(b2.x)+(10*(b2.y+1))].active == false) or (checkIfInObject(field[(b2.x)+(10*(b2.y+1))])) == true)
+				    and ((field[(b2.x)+(10*(b2.y+2))].active == false) or (checkIfInObject(field[(b2.x)+(10*(b2.y+2))])) == true)
+					and ((field[(b2.x+1)+(10*(b2.y))].active == false) or (checkIfInObject(field[(b2.x+1)+(10*(b2.y))])) == true)
+				    and ((field[(b2.x-1)+(10*(b2.y))].active == false) or (checkIfInObject(field[(b2.x-1)+(10*(b2.y))])) == true)
+				    and ((field[(b2.x-2)+(10*(b2.y))].active == false) or (checkIfInObject(field[(b2.x-2)+(10*(b2.y))])) == true))then
+					{
+						if (checkIfInObject(field[(b2.x)+(10*(b2.y-1))]) == false) then
+						{
+							b1.setActive(false);
+							b3.setActive(false);
+							b4.setActive(false);
+							
+							b1 = field[(b2.x)+10*(b2.y-1)];
+							b3 = field[(b2.x)+10*(b2.y+1)];
+							b4 = field[(b2.x)+10*(b2.y+2)];
+							
+							b1.active = true;
+							b1.color = this.color;
+							b3.active = true;
+							b3.color = this.color;
+							b4.active = true;
+							b4.color = this.color;
+						}
+						else if (checkIfInObject(field[(b2.x+1)+(10*(b2.y))]) == false) then
+						{
+							b1.setActive(false);
+							b3.setActive(false);
+							b4.setActive(false);
+							
+							b1 = field[(b2.x+1)+10*(b2.y)];
+							b3 = field[(b2.x-1)+10*(b2.y)];
+							b4 = field[(b2.x-2)+10*(b2.y)];
+							
+							b1.active = true;
+							b1.color = this.color;
+							b3.active = true;
+							b3.color = this.color;
+							b4.active = true;
+							b4.color = this.color;
+						}
+					}
+				}
+		}	
+		else if type == 2 then
+		{
+			return; #turn changes nothing
+		}
+		else if type == 3 then
+		{
+			if b2.y < 19 and b2.x < 9 and b2.x > 0 then { 
+					if (((field[(b2.x)+(10*(b2.y-1))].active == false) or (checkIfInObject(field[(b2.x)+(10*(b2.y-1))])) == true)
+					and ((field[(b2.x+1)+(10*(b2.y-1))].active == false) or (checkIfInObject(field[(b2.x+1)+(10*(b2.y-1))])) == true)
+					and ((field[(b2.x-1)+(10*(b2.y))].active == false) or (checkIfInObject(field[(b2.x-1)+(10*(b2.y))])) == true)
+					and ((field[(b2.x+1)+(10*(b2.y))].active == false) or (checkIfInObject(field[(b2.x+1)+(10*(b2.y))])) == true)
+					and ((field[(b2.x+1)+(10*(b2.y+1))].active == false) or (checkIfInObject(field[(b2.x+1)+(10*(b2.y+1))])) == true))then
+					{
+						if (checkIfInObject(field[(b2.x+1)+(10*(b2.y))]) == false) then
+						{
+							b1.setActive(false);
+							b4.setActive(false);
+							b1 = b3;
+							b3 = field[(b2.x+1)+10*(b2.y)];
+							b4 = field[(b2.x+1)+10*(b2.y+1)];
+							b3.active = true;
+							b3.color = this.color;
+							b4.active = true;
+							b4.color = this.color;
+						}
+						else if (checkIfInObject(field[(b2.x-1)+(10*(b2.y))]) == false) then
+						{
+							b3.setActive(false);
+							b4.setActive(false);				
+							b3 = b1;
+							b1 = field[(b2.x-1)+10*(b2.y)];
+							b4 = field[(b2.x+1)+10*(b2.y-1)];
+							b1.active = true;
+							b1.color = this.color;
+							b4.active = true;
+							b4.color = this.color;
+						}
+					}
+				}
+		}
+		else if type == 4 then
+		{
+			if b2.y < 19 and b2.x < 9 and b2.x > 0 then{
+				if (((field[(b2.x-1)+(10*(b2.y-1))].active == false) or (checkIfInObject(field[(b2.x-1)+(10*(b2.y-1))])) == true)
+				and ((field[(b2.x)+(10*(b2.y-1))].active == false) or (checkIfInObject(field[(b2.x)+(10*(b2.y-1))])) == true)
+				and ((field[(b2.x+1)+(10*(b2.y-1))].active == false) or (checkIfInObject(field[(b2.x+1)+(10*(b2.y-1))])) == true)
+				and ((field[(b2.x-1)+(10*(b2.y))].active == false) or (checkIfInObject(field[(b2.x-1)+(10*(b2.y))])) == true)
+				and ((field[(b2.x+1)+(10*(b2.y))].active == false) or (checkIfInObject(field[(b2.x+1)+(10*(b2.y))])) == true)
+				and ((field[(b2.x-1)+(10*(b2.y+1))].active == false) or (checkIfInObject(field[(b2.x-1)+(10*(b2.y+1))])) == true)
+				and ((field[(b2.x)+(10*(b2.y+1))].active == false) or (checkIfInObject(field[(b2.x)+(10*(b2.y+1))])) == true)
+				and ((field[(b2.x+1)+(10*(b2.y+1))].active == false) or (checkIfInObject(field[(b2.x+1)+(10*(b2.y+1))])) == true)) then
+				{
+					if (checkIfInObject(field[(b2.x-1)+(10*(b2.y-1))]) == true) then
+						{
+							b1.setActive(false);
+							b3.setActive(false);
+							b4.setActive(false);				
+							b1 = field[(b2.x)+10*(b2.y+1)];
+							b3 = field[(b2.x)+10*(b2.y-1)];
+							b4 = field[(b2.x+1)+10*(b2.y-1)];							
+							b1.active = true;
+							b1.color = this.color;						
+							b3.active = true;
+							b3.color = this.color;		
+							b4.active = true;
+							b4.color = this.color;
+						}
+					else if (checkIfInObject(field[(b2.x+1)+(10*(b2.y-1))]) == true) then
+					{
+							b1.setActive(false);
+							b3.setActive(false);
+							b4.setActive(false);	
+							
+							b1 = field[(b2.x-1)+10*(b2.y)];
+							b3 = field[(b2.x+1)+10*(b2.y)];
+							b4 = field[(b2.x+1)+10*(b2.y+1)];		
+							
+							b1.active = true;
+							b1.color = this.color;						
+							b3.active = true;
+							b3.color = this.color;		
+							b4.active = true;
+							b4.color = this.color;
+					}
+					else if (checkIfInObject(field[(b2.x+1)+(10*(b2.y+1))]) == true) then
+					{
+							b1.setActive(false);
+							b3.setActive(false);
+							b4.setActive(false);						
+							b1 = field[(b2.x)+10*(b2.y-1)];
+							b3 = field[(b2.x)+10*(b2.y+1)];
+							b4 = field[(b2.x-1)+10*(b2.y+1)];									
+							b1.active = true;
+							b1.color = this.color;						
+							b3.active = true;
+							b3.color = this.color;		
+							b4.active = true;
+							b4.color = this.color;
+					}
+					else if (checkIfInObject(field[(b2.x-1)+(10*(b2.y+1))]) == true) then
+					{
+							b1.setActive(false);
+							b3.setActive(false);
+							b4.setActive(false);								
+							b1 = field[(b2.x+1)+10*(b2.y)];
+							b3 = field[(b2.x-1)+10*(b2.y)];
+							b4 = field[(b2.x-1)+10*(b2.y-1)];					
+							b1.active = true;
+							b1.color = this.color;						
+							b3.active = true;
+							b3.color = this.color;		
+							b4.active = true;
+							b4.color = this.color;
+					}
+				}	
+			}
+		}		
+		else if type == 5 then
+		{
+			if b2.y < 19 and b2.x < 9 and b2.x > 0 then{
+			if (((field[(b2.x-1)+(10*(b2.y-1))].active == false) or (checkIfInObject(field[(b2.x-1)+(10*(b2.y-1))])) == true)
+				and ((field[(b2.x)+(10*(b2.y-1))].active == false) or (checkIfInObject(field[(b2.x)+(10*(b2.y-1))])) == true)
+				and ((field[(b2.x+1)+(10*(b2.y-1))].active == false) or (checkIfInObject(field[(b2.x+1)+(10*(b2.y-1))])) == true)
+				and ((field[(b2.x-1)+(10*(b2.y))].active == false) or (checkIfInObject(field[(b2.x-1)+(10*(b2.y))])) == true)
+				and ((field[(b2.x+1)+(10*(b2.y))].active == false) or (checkIfInObject(field[(b2.x+1)+(10*(b2.y))])) == true)
+				and ((field[(b2.x-1)+(10*(b2.y+1))].active == false) or (checkIfInObject(field[(b2.x-1)+(10*(b2.y+1))])) == true)
+				and ((field[(b2.x)+(10*(b2.y+1))].active == false) or (checkIfInObject(field[(b2.x)+(10*(b2.y+1))])) == true)
+				and ((field[(b2.x+1)+(10*(b2.y+1))].active == false) or (checkIfInObject(field[(b2.x+1)+(10*(b2.y+1))])) == true)) then
+				{
+					if (checkIfInObject(field[(b2.x+1)+(10*(b2.y-1))]) == true) then
+						{
+							b1.setActive(false);
+							b3.setActive(false);
+							b4.setActive(false);							
+							b1 = field[(b2.x)+10*(b2.y-1)];
+							b3 = field[(b2.x)+10*(b2.y+1)];
+							b4 = field[(b2.x+1)+10*(b2.y+1)];							
+							b1.active = true;
+							b1.color = this.color;						
+							b3.active = true;
+							b3.color = this.color;		
+							b4.active = true;
+							b4.color = this.color;
+						}
+					else if (checkIfInObject(field[(b2.x+1)+(10*(b2.y+1))]) == true) then
+					{
+							b1.setActive(false);
+							b3.setActive(false);
+							b4.setActive(false);						
+							b1 = field[(b2.x+1)+10*(b2.y)];
+							b3 = field[(b2.x-1)+10*(b2.y)];
+							b4 = field[(b2.x-1)+10*(b2.y+1)];									
+							b1.active = true;
+							b1.color = this.color;						
+							b3.active = true;
+							b3.color = this.color;		
+							b4.active = true;
+							b4.color = this.color;
+					}	
+					else if (checkIfInObject(field[(b2.x-1)+(10*(b2.y+1))]) == true) then
+					{
+							b1.setActive(false);
+							b3.setActive(false);
+							b4.setActive(false);						
+							b1 = field[(b2.x)+10*(b2.y+1)];
+							b3 = field[(b2.x)+10*(b2.y-1)];
+							b4 = field[(b2.x-1)+10*(b2.y-1)];									
+							b1.active = true;
+							b1.color = this.color;						
+							b3.active = true;
+							b3.color = this.color;		
+							b4.active = true;
+							b4.color = this.color;
+					}	
+					else if (checkIfInObject(field[(b2.x-1)+(10*(b2.y-1))]) == true) then
+					{
+							b1.setActive(false);
+							b3.setActive(false);
+							b4.setActive(false);								
+							b1 = field[(b2.x-1)+10*(b2.y)];
+							b3 = field[(b2.x+1)+10*(b2.y)];
+							b4 = field[(b2.x+1)+10*(b2.y-1)];					
+							b1.active = true;
+							b1.color = this.color;						
+							b3.active = true;
+							b3.color = this.color;		
+							b4.active = true;
+							b4.color = this.color;
+					}
+				}
+			}
+		}		
+		else if type == 6 then
+		{
+			if b2.y < 19 and b2.x < 9 and b2.x > 0 then{
+			if (((field[(b2.x)+(10*(b2.y-1))].active == false) or (checkIfInObject(field[(b2.x)+(10*(b2.y-1))])) == true)
+				    and ((field[(b2.x)+(10*(b2.y+1))].active == false) or (checkIfInObject(field[(b2.x)+(10*(b2.y+1))])) == true)
+				    and ((field[(b2.x-1)+(10*(b2.y))].active == false) or (checkIfInObject(field[(b2.x-1)+(10*(b2.y))])) == true)
+				    and ((field[(b2.x+1)+(10*(b2.y))].active == false) or (checkIfInObject(field[(b2.x+1)+(10*(b2.y))])) == true))then
+					{
+						#turns type 6
+						if (checkIfInObject(field[(b2.x)+(10*(b2.y+1))]) == false) then
+						{
+							b1.setActive(false);
+							b1 = b3;
+							b3 = b4;
+							b4 = field[(b2.x)+10*(b2.y+1)];
+							b4.active = true;
+							b4.color = this.color;
+						}
+						else if (checkIfInObject(field[(b2.x-1)+(10*(b2.y))]) == false) then
+						{
+							b1.setActive(false);
+							b1 = b3;
+							b3 = b4;
+							b4 = field[(b2.x-1)+10*(b2.y)];
+							b4.active = true;
+							b4.color = this.color;
+						}
+						else if (checkIfInObject(field[(b2.x)+(10*(b2.y-1))]) == false) then
+						{
+							b1.setActive(false);
+							b1 = b3;
+							b3 = b4;
+							b4 = field[(b2.x)+10*(b2.y-1)];
+							b4.active = true;
+							b4.color = this.color;
+						}
+						else if (checkIfInObject(field[(b2.x+1)+(10*(b2.y))]) == false) then
+						{
+							b1.setActive(false);
+							b1 = b3;
+							b3 = b4;
+							b4 = field[(b2.x+1)+10*(b2.y)];
+							b4.active = true;
+							b4.color = this.color;
+						}
+					}
+				}
+		}
+		else if type == 7 then
+		{
+			if b2.y < 19 and b2.x < 9 and b2.x > 0 then { 
+					if (((field[(b2.x+1)+(10*(b2.y))].active == false) or (checkIfInObject(field[(b2.x+1)+(10*(b2.y))])) == true)
+					and ((field[(b2.x)+(10*(b2.y+1))].active == false) or (checkIfInObject(field[(b2.x)+(10*(b2.y+1))])) == true)
+					and ((field[(b2.x)+(10*(b2.y-1))].active == false) or (checkIfInObject(field[(b2.x)+(10*(b2.y-1))])) == true)
+					and ((field[(b2.x+1)+(10*(b2.y-1))].active == false) or (checkIfInObject(field[(b2.x+1)+(10*(b2.y-1))])) == true)
+					and ((field[(b2.x-1)+(10*(b2.y-1))].active == false) or (checkIfInObject(field[(b2.x-1)+(10*(b2.y-1))])) == true))then
+					{
+						if (checkIfInObject(field[(b2.x+1)+(10*(b2.y-1))]) == false) then
+						{
+							b3.setActive(false);
+							b4.setActive(false);
+							b3 = b1;						
+							b1 = field[(b2.x+1)+10*(b2.y-1)];
+							b4 = field[(b2.x)+10*(b2.y+1)];
+							b1.active = true;
+							b1.color = this.color;
+							b4.active = true;
+							b4.color = this.color;
+						}
+						else if (checkIfInObject(field[(b2.x)+(10*(b2.y-1))]) == false) then
+						{
+							b1.setActive(false);
+							b4.setActive(false);			
+							b1 = b3;				
+							b3 = field[(b2.x)+10*(b2.y-1)];
+							b4 = field[(b2.x-1)+10*(b2.y-1)];
+							b3.active = true;
+							b3.color = this.color;
+							b4.active = true;
+							b4.color = this.color;
+						}
+					}
+				}
+		}
+	}
+}
+
+#returns the number of full rows (and deletes rows)
+function checkForRow()
+{
+	var rows = 0;
+	for var i in 0:20 do
+	{
+		var row = true;
+		for var j in 0:10 do
+		{
+			row = field[j+(10*i)].active and row;
+		}
+		if row then
+		{
+			rows += 1;
+			for var k in 0:10 do
+			{
+				field[k+(10*i)].setActive(false);
+			}		
+			for var o in (-1*i):1 do
+			{
+				for var p in 0:10 do
+				{
+					if o < 0 then
+					{
+						field[p+(10*(-1*o))].color = field[p+(10*((-1*(o))-1))].color ;
+						field[p+(10*(-1*o))].active = field[p+(10*((-1*(o))-1))].active ;
+					
+					}
+					else
+					{
+						field[p].color = [0.9,0.9,0.9] ;
+						field[p].active = false ;
+					}	
+				}
+			}	
+		}
+	}
+	return rows;
+}
+
+
+function createField()
+{
+	
+	for var i in 0:20 do
+	{
+		for var j in 0:10 do
+		{
+			var b = block(j, i, [0.9,0.9,0.9], false);
+			field.push(b);
+		}
+	}
+}
+
+function setField()
+{
+	#Draw background (frame)
+	for var i in 0:12 do
+	{
+		for var j in 0:22 do
+		{
+			if firsttime then
+			{
+				canvas.setFillColor(0.5, 0.5, 0.5);
+				canvas.setLineColor(1,1,1);
+				canvas.frameRect(i*blocksize, j*blocksize, blocksize, blocksize);
+				
+			}
+			if firsttime and j == 0 and i > 2 and i < 9 then
+			{
+				canvas.setFillColor(0.9, 0.9, 0.9);
+				canvas.setLineColor(0.9, 0.9, 0.9);
+				canvas.frameRect(i*blocksize, j*blocksize, blocksize, blocksize);
+				
+		}
+			else if firsttime and j == 21 and i > 2 and i < 9 then
+			{
+				canvas.setFillColor(0.9, 0.9, 0.9);
+				canvas.setLineColor(0.9, 0.9, 0.9);
+				canvas.frameRect(i*blocksize, j*blocksize, blocksize, blocksize);
+				
+		}
+			
+		}		
+	}	
+	firsttime = false;
+	#Place the blocks
+	for var i in 0:200 do
+	{
+			var  b = field[i];
+			canvas.setFillColor(b.color[0], b.color[1], b.color[2]);
+			canvas.setLineColor(1,1,1);
+			
+			canvas.frameRect(b.x*blocksize + blocksize, b.y*blocksize + blocksize, blocksize, blocksize);
+	}
+}
+
+function playerInput(event)
+{
+	if event.key == "a" then
+	{
+		objects[objects.size()-1].moveLeft();
+		quitEventMode();
+	}
+	else if event.key == "d" then
+	{
+		objects[objects.size()-1].moveRight();
+		quitEventMode();
+	}
+	else if event.key == "w" then
+	{
+		objects[objects.size()-1].turn();
+		quitEventMode();
+	}
+	else if event.key == "s" then
+	{
+		while not objects[objects.size()-1].arrived do{
+		objects[objects.size()-1].moveDown();		
+		}
+		quitEventMode();
+	}
+	else
+	{
+		quitEventMode();
+	}
+}
+
+function onTick(event)
+{
+	if theTime < ((1/speed)*8) then
+	{
+		theTime += 1;
+	}
+	else
+	{
+		theTime = 0;
+		objects[objects.size()-1].moveDown();
+	}			 
+ 	quitEventMode();
+}
+
+function showScore()
+{
+	canvas.setTextAlign("center");			
+	canvas.setFillColor(0,0,0);
+	canvas.setFont("Helvetica", blocksize/2);
+	var myscore = String("score: " + points + " points");
+	canvas.text(blocksize*6, blocksize*21.2, myscore);
+
+	canvas.setTextAlign("center");			
+	canvas.setFillColor(0,0,0);
+	canvas.setFont("Helvetica", blocksize/2);
+	var thehighscore = String("highscore: " + highscore + " points");
+	canvas.text(blocksize*6, blocksize*0.2, thehighscore);
+}
+
+#----------------------------------------------------------------------Start------------------------------------------------------------
+
+
+
+setEventHandler("canvas.keydown", playerInput);
+setEventHandler("timer", onTick);
+
+if exists("highscore") then
+	{
+		highscore = load("highscore");
+	}
+else
+	{
+		save("highscore", highscore);
+	}
+
+for var i in 1:100 do
+{
+	createField();
+	setField();
+	showScore();
+	objects.remove(0:objects.size());
+	objects.push(object());
+	
+	speed = i;
+	canvas.setTextAlign("center");
+	canvas.setFillColor(0,0,0);
+	canvas.setFont("Helvetica", blocksize*2);
+	var levelText = String("- Level " + i + " -");
+	canvas.text(blocksize*6, (blocksize*22)/3.5, levelText);
+
+	wait(2000);
+	
+	while true do
+	{
+		if objects[objects.size()-1].arrived then
+		{
+			points += (100*speed)*((checkForRow())^2);
+			firsttime = true;
+			setField();
+			showScore();			
+			var a = object();
+			objects.push(a);
+		}			
+		enterEventMode();
+		setField();		
+		if end and points > speed*1000 then
+		{	
+			field.remove(0:200);
+			end = false;
+			firsttime = true;
+			break;
+		}
+		else if end or (i == 99)then
+		{
+			if points > highscore then
+			{
+				highscore = points;
+				save("highscore", highscore);
+			}
+			alert("Game Over:\n You scored " + points + " points.\n Current highscore: " + highscore + " points");
+			terminate();
+		}
+	}
+}
